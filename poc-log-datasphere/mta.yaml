@@ -1,0 +1,54 @@
+_schema-version: 3.3.0
+ID: poc-log-datasphere
+version: 1.0.0
+description: "A simple CAP project."
+parameters:
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+modules:
+  - name: poc-log-datasphere-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      host: !sensitive poclog-${org}-${space}
+      memory: 256M
+      instances: 1
+      buildpack: nodejs_buildpack
+    build-parameters:
+      builder: npm-ci
+    provides:
+      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+        properties:
+          srv-url: ${default-url}
+    requires:
+      - name: poc-log-datasphere-db
+      - name: poc-log-datasphere-auth
+
+  - name: poc-log-datasphere-db-deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+    requires:
+      - name: poc-log-datasphere-db
+
+resources:
+  - name: poc-log-datasphere-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+  - name: poc-log-datasphere-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: poc-log-datasphere
+        tenant-mode: dedicated
