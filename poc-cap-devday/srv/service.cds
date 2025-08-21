@@ -6,6 +6,10 @@ service AdminService @(path:'/admin') {
   @odata.draft.enabled
   entity Books as projection on my.Books;
   entity Genres as projection on my.Genres;
+
+  action testDebug () returns {
+    message: String(250)
+  }
 };
 
 annotate AdminService.Authors with @UI: {
